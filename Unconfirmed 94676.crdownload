@@ -1,0 +1,132 @@
+# ============================================================
+# CODTECH IT SOLUTIONS - AI INTERNSHIP
+# Intern ID   : CITS4715
+# Intern Name : Sanskruti Vijay Gulghane
+# Project     : Email Spam Classifier
+# Domain      : Artificial Intelligence
+# Duration    : 4 Weeks (14 June 2026 - 12 July 2026)
+# ============================================================
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.metrics import (accuracy_score, classification_report,
+                             confusion_matrix)
+
+# ── 1. Create Sample Dataset ─────────────────────────────────
+# In real project, use: pd.read_csv('spam.csv')
+# Here we use a sample dataset for demonstration
+data = {
+    'text': [
+        "Congratulations! You've won a $1000 gift card. Click here now!",
+        "FREE prize waiting for you. Claim immediately!",
+        "Win big money now! Limited time offer. Act fast!",
+        "You have been selected for a cash reward. Reply YES",
+        "Urgent: Your account has been compromised. Click to verify",
+        "Get rich quick! Make $5000 a week from home",
+        "WINNER!! You have been chosen as a lucky winner",
+        "Buy cheap medicines online. No prescription needed",
+        "Hey, are you coming to the meeting tomorrow?",
+        "Please find attached the project report for review.",
+        "Can we schedule a call this afternoon?",
+        "Your order has been shipped and will arrive by Friday.",
+        "Hi, just checking in on the status of the assignment.",
+        "Let's catch up over coffee this weekend.",
+        "The team meeting is rescheduled to 3 PM.",
+        "I reviewed your proposal. Let's discuss the next steps.",
+        "Please send me the updated spreadsheet when ready.",
+        "Thank you for your help with the presentation.",
+        "Looking forward to our collaboration on this project.",
+        "Reminder: Submit your timesheet by end of day.",
+        "Claim your free lottery ticket now! You're a winner!",
+        "Lowest price guaranteed on all medications. Order now!",
+        "Double your income working from home. No experience needed.",
+        "This is not spam. Meet singles in your area tonight!",
+        "Exclusive deal just for you! 90% off for next 10 minutes",
+    ],
+    'label': [
+        'spam','spam','spam','spam','spam',
+        'spam','spam','spam',
+        'ham','ham','ham','ham','ham',
+        'ham','ham','ham','ham','ham',
+        'ham','ham',
+        'spam','spam','spam','spam','spam',
+    ]
+}
+
+df = pd.DataFrame(data)
+
+print("=== Dataset Overview ===")
+print(df['label'].value_counts())
+
+# ── 2. EDA – Label Distribution ──────────────────────────────
+plt.figure(figsize=(5, 4))
+sns.countplot(data=df, x='label',
+              palette={'spam': '#FF6B6B', 'ham': '#6BCB77'})
+plt.title('Email Label Distribution')
+plt.xlabel('Label')
+plt.ylabel('Count')
+plt.tight_layout()
+plt.savefig('spam_label_distribution.png', dpi=100)
+plt.close()
+print("\n[Saved] spam_label_distribution.png")
+
+# ── 3. Text Vectorization (TF-IDF) ───────────────────────────
+# Convert text to numerical features
+tfidf = TfidfVectorizer(stop_words='english', max_features=500)
+X = tfidf.fit_transform(df['text'])
+
+# Encode labels: spam=1, ham=0
+y = (df['label'] == 'spam').astype(int)
+
+# ── 4. Train-Test Split ───────────────────────────────────────
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42)
+
+# ── 5. Model Training (Naive Bayes) ──────────────────────────
+model = MultinomialNB()
+model.fit(X_train, y_train)
+
+# ── 6. Evaluation ────────────────────────────────────────────
+y_pred = model.predict(X_test)
+accuracy = accuracy_score(y_test, y_pred)
+
+print(f"\n=== Model Accuracy: {accuracy * 100:.2f}% ===")
+print("\nClassification Report:")
+print(classification_report(y_test, y_pred,
+      target_names=['Ham (Not Spam)', 'Spam']))
+
+# ── 7. Confusion Matrix ───────────────────────────────────────
+cm = confusion_matrix(y_test, y_pred)
+plt.figure(figsize=(5, 4))
+sns.heatmap(cm, annot=True, fmt='d', cmap='Reds',
+            xticklabels=['Ham', 'Spam'],
+            yticklabels=['Ham', 'Spam'])
+plt.title('Confusion Matrix - Spam Classifier')
+plt.xlabel('Predicted')
+plt.ylabel('Actual')
+plt.tight_layout()
+plt.savefig('spam_confusion_matrix.png', dpi=100)
+plt.close()
+print("[Saved] spam_confusion_matrix.png")
+
+# ── 8. Predict Custom Emails ──────────────────────────────────
+test_emails = [
+    "You have won a free iPhone! Click here to claim now!",
+    "Please attend the meeting at 10 AM tomorrow.",
+    "Earn $5000 a week easily from home. No experience needed.",
+    "Can you send me the project files?"
+]
+
+print("\n=== Custom Email Predictions ===")
+for email in test_emails:
+    vec   = tfidf.transform([email])
+    pred  = model.predict(vec)[0]
+    label = "🚫 SPAM" if pred == 1 else "✅ HAM (Not Spam)"
+    print(f"\nEmail : {email[:60]}...")
+    print(f"Result: {label}")
